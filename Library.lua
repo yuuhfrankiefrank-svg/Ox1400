@@ -33,7 +33,7 @@ local Library = {
     MainColor = Color3.fromRGB(28, 28, 28);
     BackgroundColor = Color3.fromRGB(20, 20, 20);
     AccentColor = Color3.fromRGB(0, 85, 255);
-    OutlineColor = Color3.fromRGB(173, 216, 230);
+    OutlineColor = Color3.fromRGB(255, 0, 0);
     RiskColor = Color3.fromRGB(255, 50, 50),
 
     Black = Color3.new(0, 0, 0);
@@ -3240,13 +3240,17 @@ function Library:CreateWindow(...)
 
     local Outer = Library:Create('Frame', {
         AnchorPoint = Config.AnchorPoint,
-        BackgroundTransparency = 1,
+        BackgroundColor3 = Library.OutlineColor,
+        BackgroundTransparency = 0,
         BorderSizePixel = 0;
         Position = Config.Position,
         Size = Config.Size,
         Visible = false;
         ZIndex = 1;
         Parent = ScreenGui;
+    });
+    Library:AddToRegistry(Outer, {
+        BackgroundColor3 = 'OutlineColor';
     });
     Library:MakeDraggable(Outer, 25, true);
 
