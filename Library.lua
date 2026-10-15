@@ -3257,7 +3257,7 @@ function Library:CreateWindow(...)
     local Inner = Library:Create('Frame', {
         Name = "Inner",
         BackgroundColor3 = Library.MainColor;
-        BorderColor3 = Library.OutlineColor;
+        BorderColor3 = Color3.fromRGB(255, 50, 50); -- main UI outline (red)
         BorderMode = Enum.BorderMode.Inset;
         Position = UDim2.new(0, 1, 0, 1);
         Size = UDim2.new(1, -2, 1, -2);
@@ -3266,7 +3266,7 @@ function Library:CreateWindow(...)
     });
     Library:AddToRegistry(Inner, {
         BackgroundColor3 = 'MainColor';
-        BorderColor3 = 'OutlineColor';
+        -- BorderColor3 intentionally fixed red (not themed)
     });
     local WindowLabel = Library:CreateLabel({
         Position = UDim2.new(0, 0, 0, 0);
@@ -3304,7 +3304,7 @@ function Library:CreateWindow(...)
 
     local TabBarOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
-        BorderColor3 = Library.OutlineColor;
+        BorderColor3 = Color3.fromRGB(255, 50, 50); -- main UI outline (red)
         Position = UDim2.new(0, 8, 0, 25);
         Size = UDim2.new(1, -16, 0, 29);
         ZIndex = 1;
@@ -3312,7 +3312,7 @@ function Library:CreateWindow(...)
     });
     Library:AddToRegistry(TabBarOuter, {
         BackgroundColor3 = 'BackgroundColor';
-        BorderColor3 = 'OutlineColor';
+        -- BorderColor3 intentionally fixed red (not themed)
     });
     local TabBarInner = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
@@ -3340,7 +3340,7 @@ function Library:CreateWindow(...)
     });
     local MainSectionOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
-        BorderColor3 = Library.OutlineColor;
+        BorderColor3 = Color3.fromRGB(255, 50, 50); -- main UI outline (red)
         Position = UDim2.new(0, 8, 0, 58);
         Size = UDim2.new(1, -16, 1, -66);
         ZIndex = 1;
@@ -3348,7 +3348,7 @@ function Library:CreateWindow(...)
     });
     Library:AddToRegistry(MainSectionOuter, {
         BackgroundColor3 = 'BackgroundColor';
-        BorderColor3 = 'OutlineColor';
+        -- BorderColor3 intentionally fixed red (not themed)
     });
     local MainSectionInner = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
@@ -3364,7 +3364,7 @@ function Library:CreateWindow(...)
     });
     local TabContainer = Library:Create('Frame', {
         BackgroundColor3 = Library.MainColor;
-        BorderColor3 = Library.OutlineColor;
+        BorderColor3 = Color3.fromRGB(255, 50, 50); -- main UI outline (red)
         Position = UDim2.new(0, 8, 0, 8);
         Size = UDim2.new(1, -16, 1, -16);
         ZIndex = 2;
@@ -3372,7 +3372,7 @@ function Library:CreateWindow(...)
     });
     Library:AddToRegistry(TabContainer, {
         BackgroundColor3 = 'MainColor';
-        BorderColor3 = 'OutlineColor';
+        -- BorderColor3 intentionally fixed red (not themed)
     });
     function Window:SetWindowTitle(Title)
         WindowLabel.Text = Title;
