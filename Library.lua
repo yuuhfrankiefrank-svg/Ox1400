@@ -1,3 +1,12 @@
+--[[
+    Linoria Library - Enhanced Edition
+    10x cooler version with:
+    - Soft UI Shadows (UIShadow via high quality ImageLabel)
+    - Neon Accent Glows (UIStroke based)
+    - Deeper modern dark theme + punchier neon accent
+    - Applied to Window, Groupboxes, ColorPicker, Keybinds, Watermark, Notifications
+]]
+
 local InputService = game:GetService('UserInputService');
 local TextService = game:GetService('TextService');
 local CoreGui = game:GetService('CoreGui');
@@ -30,11 +39,11 @@ local Library = {
     HudRegistry = {};
 
     FontColor = Color3.fromRGB(255, 255, 255);
-    MainColor = Color3.fromRGB(28, 28, 28);
-    BackgroundColor = Color3.fromRGB(20, 20, 20);
-    AccentColor = Color3.fromRGB(255, 0, 0);
-    OutlineColor = Color3.fromRGB(50, 50, 50);
-    RiskColor = Color3.fromRGB(255, 50, 50),
+    MainColor = Color3.fromRGB(22, 22, 26);
+    BackgroundColor = Color3.fromRGB(14, 14, 18);
+    AccentColor = Color3.fromRGB(255, 40, 70); -- punchier neon red
+    OutlineColor = Color3.fromRGB(45, 45, 55);
+    RiskColor = Color3.fromRGB(255, 60, 80),
 
     Black = Color3.new(0, 0, 0);
 
@@ -205,8 +214,52 @@ function Library:ApplyTextStroke(Inst)
     });
 end;
 
-function Library:ApplyGlow(Inst)
+function Library:ApplyGlow(Inst, Thickness, Transparency)
+    Thickness = Thickness or 2
+    Transparency = Transparency or 0.45
 
+    -- Neon outer glow
+    local Glow = Library:Create('UIStroke', {
+        Name = 'UIGlow';
+        Color = Library.AccentColor;
+        Thickness = Thickness;
+        Transparency = Transparency;
+        LineJoinMode = Enum.LineJoinMode.Round;
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+        Parent = Inst;
+    });
+
+    Library:AddToRegistry(Glow, {
+        Color = 'AccentColor';
+    });
+
+    return Glow
+end;
+
+function Library:ApplyShadow(Inst, Options)
+    Options = Options or {}
+    local Offset = Options.Offset or 5
+    local Transparency = Options.Transparency or 0.5
+    local Color = Options.Color or Color3.new(0, 0, 0)
+    local Softness = Options.Softness or 20
+
+    -- High quality soft drop shadow
+    local Shadow = Library:Create('ImageLabel', {
+        Name = 'UIShadow';
+        AnchorPoint = Vector2.new(0.5, 0.5);
+        BackgroundTransparency = 1;
+        Position = UDim2.new(0.5, 0, 0.5, Offset / 2);
+        Size = UDim2.new(1, Softness, 1, Softness);
+        ZIndex = math.max(0, (Inst.ZIndex or 1) - 1);
+        Image = 'rbxassetid://6014261993';
+        ImageColor3 = Color;
+        ImageTransparency = Transparency;
+        ScaleType = Enum.ScaleType.Slice;
+        SliceCenter = Rect.new(49, 49, 450, 450);
+        Parent = Inst;
+    });
+
+    return Shadow
 end;
 
 function Library:CreateLabel(Properties, IsHud)
@@ -650,6 +703,8 @@ do
             ZIndex = 15;
             Parent = ScreenGui,
         });
+        Library:ApplyShadow(PickerFrameOuter, { Offset = 6, Softness = 18, Transparency = 0.4 });
+        Library:ApplyGlow(PickerFrameOuter, 1.5, 0.5);
         DisplayFrame:GetPropertyChangedSignal('AbsolutePosition'):Connect(function()
             PickerFrameOuter.Position = UDim2.fromOffset(DisplayFrame.AbsolutePosition.X, DisplayFrame.AbsolutePosition.Y + 18);
         end)
@@ -2932,6 +2987,8 @@ do
         Visible = false;
         Parent = ScreenGui;
     });
+    Library:ApplyShadow(WatermarkOuter, { Offset = 4, Softness = 14, Transparency = 0.35 });
+    Library:ApplyGlow(WatermarkOuter, 1.2, 0.4);
 
     local WatermarkInner = Library:Create('Frame', {
         BackgroundColor3 = Library.MainColor;
@@ -2989,7 +3046,8 @@ do
         ZIndex = 100;
         Parent = ScreenGui;
     });
-    Library:ApplyGlow(KeybindOuter);
+    Library:ApplyShadow(KeybindOuter, { Offset = 4, Softness = 16, Transparency = 0.4 });
+    Library:ApplyGlow(KeybindOuter, 1.5, 0.5);
 
     local KeybindInner = Library:Create('Frame', {
         BackgroundColor3 = Library.MainColor;
@@ -3114,6 +3172,7 @@ function Library:Notify(Text, Time)
         ZIndex = 100;
         Parent = Library.NotificationArea;
     });
+    Library:ApplyShadow(NotifyOuter, { Offset = 3, Softness = 12, Transparency = 0.4 });
     local NotifyInner = Library:Create('Frame', {
         BackgroundColor3 = Library.MainColor;
         BorderColor3 = Library.OutlineColor;
@@ -3126,6 +3185,7 @@ function Library:Notify(Text, Time)
         BackgroundColor3 = 'MainColor';
         BorderColor3 = 'OutlineColor';
     }, true);
+    Library:ApplyGlow(NotifyInner, 1, 0.5);
     local InnerFrame = Library:Create('Frame', {
         BackgroundColor3 = Color3.new(1, 1, 1);
         BorderSizePixel = 0;
@@ -3268,6 +3328,10 @@ function Library:CreateWindow(...)
         BackgroundColor3 = 'MainColor';
         BorderColor3 = 'OutlineColor';
     });
+
+    -- Cool enhancements: soft shadow + accent glow on main window
+    Library:ApplyShadow(Outer, { Offset = 8, Softness = 28, Transparency = 0.45 });
+    Library:ApplyGlow(Inner, 1.5, 0.55);
     local WindowLabel = Library:CreateLabel({
         Position = UDim2.new(0, 0, 0, 0);
         Size = UDim2.new(1, 0, 0, 25);
@@ -3508,6 +3572,7 @@ function Library:CreateWindow(...)
                 BackgroundColor3 = 'BackgroundColor';
                 BorderColor3 = 'OutlineColor';
             });
+            Library:ApplyShadow(BoxOuter, { Offset = 3, Softness = 10, Transparency = 0.55 });
             local BoxInner = Library:Create('Frame', {
                 BackgroundColor3 = Library.BackgroundColor;
                 BorderColor3 = Color3.new(0, 0, 0);
@@ -3519,6 +3584,7 @@ function Library:CreateWindow(...)
             Library:AddToRegistry(BoxInner, {
                 BackgroundColor3 = 'BackgroundColor';
             });
+            Library:ApplyGlow(BoxOuter, 1, 0.6);
             local Highlight = Library:Create('Frame', {
                 BackgroundColor3 = Library.AccentColor;
                 BorderSizePixel = 0;
