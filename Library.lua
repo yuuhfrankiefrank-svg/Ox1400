@@ -2533,30 +2533,32 @@ do
 
         local ListInner = Library:Create('Frame', {
             BackgroundColor3 = Library.MainColor;
-            BorderColor3 = Library.OutlineColor;
+            BorderColor3 = Color3.fromRGB(255, 255, 255);
             BorderMode = Enum.BorderMode.Inset;
             BorderSizePixel = 0;
             Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 21;
+            ZIndex = 201;
             Parent = ListOuter;
         });
         Library:AddToRegistry(ListInner, {
             BackgroundColor3 = 'MainColor';
-            BorderColor3 = 'OutlineColor';
+            BorderColor3 = function()
+                return Color3.fromRGB(255, 255, 255)
+            end;
         });
         local Scrolling = Library:Create('ScrollingFrame', {
             BackgroundTransparency = 1;
             BorderSizePixel = 0;
             CanvasSize = UDim2.new(0, 0, 0, 0);
             Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 21;
+            ZIndex = 202;
             Parent = ListInner;
 
             TopImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
             BottomImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
 
             ScrollBarThickness = 3,
-            ScrollBarImageColor3 = Library.AccentColor,
+            ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
         });
         Library:AddToRegistry(Scrolling, {
             ScrollBarImageColor3 = 'AccentColor'
@@ -2620,7 +2622,7 @@ do
                     BorderColor3 = Library.OutlineColor;
                     BorderMode = Enum.BorderMode.Middle;
                     Size = UDim2.new(1, -1, 0, 20);
-                    ZIndex = 23;
+                    ZIndex = 203;
                     Active = true,
                     Parent = Scrolling;
                 });
@@ -2629,19 +2631,23 @@ do
                     BorderColor3 = 'OutlineColor';
                 });
                 local ButtonLabel = Library:CreateLabel({
-                    Active = false;
+                    Active = true;
                     Size = UDim2.new(1, -6, 1, 0);
                     Position = UDim2.new(0, 6, 0, 0);
                     TextSize = Library.FontSize;
-                    Text = Value;
+                    Text = tostring(Value);
+                    TextColor3 = Library.FontColor;
                     TextXAlignment = Enum.TextXAlignment.Left;
-                    ZIndex = 25;
+                    ZIndex = 205;
                     Parent = Button;
                 });
+                -- force visible white text (config list was black under Global ZIndex)
+                ButtonLabel.TextColor3 = Color3.fromRGB(255, 255, 255);
+                ButtonLabel.TextTransparency = 0;
 
                 Library:OnHighlight(Button, Button,
-                    { BorderColor3 = 'AccentColor', ZIndex = 24 },
-                    { BorderColor3 = 'OutlineColor', ZIndex = 23 }
+                    { BorderColor3 = 'AccentColor', ZIndex = 204 },
+                    { BorderColor3 = 'OutlineColor', ZIndex = 203 }
                 );
                 local Selected;
 
@@ -2658,8 +2664,18 @@ do
                         Selected = Dropdown.Value == Value;
                     end;
 
-                    ButtonLabel.TextColor3 = Selected and Library.AccentColor or Library.FontColor;
-                    Library.RegistryMap[ButtonLabel].Properties.TextColor3 = Selected and 'AccentColor' or 'FontColor';
+                    -- always readable on dark list bg
+                    if Selected then
+                        ButtonLabel.TextColor3 = Color3.fromRGB(255, 255, 255);
+                        Button.BackgroundColor3 = Color3.fromRGB(45, 45, 50);
+                    else
+                        ButtonLabel.TextColor3 = Color3.fromRGB(230, 230, 230);
+                        Button.BackgroundColor3 = Library.MainColor;
+                    end
+                    ButtonLabel.TextTransparency = 0;
+                    if Library.RegistryMap[ButtonLabel] then
+                        Library.RegistryMap[ButtonLabel].Properties.TextColor3 = 'FontColor';
+                    end
                 end;
                 ButtonLabel.InputBegan:Connect(function(Input)
                     if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) then
