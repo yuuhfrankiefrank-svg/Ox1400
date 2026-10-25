@@ -324,26 +324,39 @@ function Library:MakeResizable(Instance, MinSize, MaxSize)
         Text = '',
         AutoButtonColor = false,
         BackgroundTransparency = 1,
-        Size = UDim2.fromOffset(16, 16),
-        Position = UDim2.new(1, -4, 1, -4),
+        Size = UDim2.fromOffset(22, 22),
+        Position = UDim2.new(1, -2, 1, -2),
         AnchorPoint = Vector2.new(1, 1),
         ZIndex = 25,
         Parent = Instance,
     })
 
-    local GripIcon = Library:CreateLabel({
-        BackgroundTransparency = 1,
+    -- white corner grip (rounded quarter, bottom-right)
+    local GripVisual = Library:Create('Frame', {
+        Name = 'GripVisual',
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
         Size = UDim2.fromOffset(16, 16),
         Position = UDim2.new(1, 0, 1, 0),
         AnchorPoint = Vector2.new(1, 1),
-        Text = '◢',
-        TextColor3 = Library.OutlineColor,
-        TextSize = Library.FontSize + 2,
         ZIndex = 26,
         Parent = Grip,
     })
-    Library:AddToRegistry(GripIcon, {
-        TextColor3 = 'OutlineColor',
+    Library:Create('UICorner', {
+        CornerRadius = UDim.new(0, 5),
+        Parent = GripVisual,
+    })
+    -- hide top-left so only bottom-right corner remains
+    local Cut = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor,
+        BorderSizePixel = 0,
+        Size = UDim2.new(0.65, 0, 0.65, 0),
+        Position = UDim2.fromScale(0, 0),
+        ZIndex = 27,
+        Parent = GripVisual,
+    })
+    Library:AddToRegistry(Cut, {
+        BackgroundColor3 = 'MainColor',
     })
 
     Grip.InputBegan:Connect(function(Input)
