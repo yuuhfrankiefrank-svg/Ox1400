@@ -1,5 +1,5 @@
 local repo = "https://raw.githubusercontent.com/yuuhfrankiefrank-svg/Ox1400/main/"
-local Library = loadstring(game:HttpGet(repo .. "LinoriaRivalsSafe.lua"))()
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 
 local Options = Library.Options
 local Toggles = Library.Toggles
