@@ -13,26 +13,18 @@ local Mouse = LocalPlayer:GetMouse();
 local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
 
 local ScreenGui = Instance.new('ScreenGui');
-ScreenGui.Name = 'LinoriaRivalsSafe';
+ScreenGui.Name = 'LinoriaLib';
 ScreenGui.ResetOnSpawn = false;
 ScreenGui.IgnoreGuiInset = true;
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
 pcall(function() ProtectGui(ScreenGui) end);
 do
-    local parented = false
+    local ok = false
     pcall(function()
-        if gethui then
-            ScreenGui.Parent = gethui()
-            parented = ScreenGui.Parent ~= nil
-        end
+        if gethui then ScreenGui.Parent = gethui(); ok = ScreenGui.Parent ~= nil end
     end)
-    if not parented then
-        pcall(function()
-            ScreenGui.Parent = CoreGui
-            parented = ScreenGui.Parent ~= nil
-        end)
-    end
-    if not parented then
+    if not ok then pcall(function() ScreenGui.Parent = CoreGui; ok = ScreenGui.Parent ~= nil end) end
+    if not ok then
         pcall(function()
             local pg = LocalPlayer:FindFirstChildOfClass('PlayerGui') or LocalPlayer:WaitForChild('PlayerGui', 5)
             if pg then ScreenGui.Parent = pg end
@@ -55,7 +47,7 @@ local Library = {
     FontColor = Color3.fromRGB(255, 255, 255);
     MainColor = Color3.fromRGB(28, 28, 28);
     BackgroundColor = Color3.fromRGB(20, 20, 20);
-    AccentColor = Color3.fromRGB(255, 255, 255); -- forced white
+    AccentColor = Color3.fromRGB(255, 255, 255);
     OutlineColor = Color3.fromRGB(50, 50, 50);
     RiskColor = Color3.fromRGB(255, 50, 50),
 
@@ -71,7 +63,6 @@ local Library = {
     ScreenGui = ScreenGui;
 
     Toggled = false;
-    ShowCustomCursor = true;
     WireframeDrag = true;
     UseBlur = true;
     BlurSize = 48;
@@ -503,33 +494,14 @@ function Library:OnHighlight(HighlightInstance, Instance, Properties, Properties
 end;
 
 function Library:MouseIsOverOpenedFrame()
-    local mx, my
-    pcall(function()
-        local p = InputService:GetMouseLocation()
-        mx, my = p.X, p.Y
-    end)
-    if not mx then
-        mx, my = Mouse.X, Mouse.Y
-    end
-    -- GUI inset compensation
-    local inset = 0
-    pcall(function()
-        local top = game:GetService('GuiService'):GetGuiInset()
-        inset = top.Y
-    end)
-    my = my - inset
-
     for Frame, _ in next, Library.OpenedFrames do
-        if typeof(Frame) ~= 'Instance' or not Frame.Parent then
-            continue
-        end
         local AbsPos, AbsSize = Frame.AbsolutePosition, Frame.AbsoluteSize;
-        if mx >= AbsPos.X and mx <= AbsPos.X + AbsSize.X
-            and my >= AbsPos.Y and my <= AbsPos.Y + AbsSize.Y then
+        if Mouse.X >= AbsPos.X and Mouse.X <= AbsPos.X + AbsSize.X
+            and Mouse.Y >= AbsPos.Y and Mouse.Y <= AbsPos.Y + AbsSize.Y then
+
             return true;
         end;
     end;
-    return false;
 end;
 
 function Library:IsMouseOverFrame(Frame)
@@ -600,9 +572,6 @@ function Library:RemoveFromRegistry(Instance)
 end;
 
 function Library:UpdateColorsUsingRegistry()
-    -- keep accent forced white
-    Library.AccentColor = Color3.fromRGB(255, 255, 255);
-    Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor);
     for Idx, Object in next, Library.Registry do
         for Property, ColorIdx in next, Object.Properties do
             if type(ColorIdx) == 'string' then
@@ -2550,15 +2519,8 @@ do
             Visible = false;
             Parent = ScreenGui;
         });
-                local function RecalculateListPosition()
-            local insetY = 0
-            pcall(function()
-                insetY = game:GetService('GuiService'):GetGuiInset().Y
-            end)
-            local pos = DropdownOuter.AbsolutePosition
-            local size = DropdownOuter.AbsoluteSize
-            ListOuter.Position = UDim2.fromOffset(pos.X, pos.Y + size.Y);
-        end;
+        local function RecalculateListPosition()
+            ListOuter.Position = UDim2.fromOffset(DropdownOuter.AbsolutePosition.X, DropdownOuter.AbsolutePosition.Y + DropdownOuter.Size.Y.Offset + 1);
         end;
 
         local function RecalculateListSize(YSize)
@@ -2798,23 +2760,53 @@ do
             Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
         end;
 
+        -- open/close on full dropdown area (not just the edge)
+        local function toggleDropdownList()
+            if ListOuter.Visible then
+                Dropdown:CloseDropdown();
+            else
+                for Frame, _ in next, Library.OpenedFrames do
+                    if Frame ~= ListOuter and typeof(Frame) == 'Instance' then
+                        pcall(function() Frame.Visible = false end)
+                    end
+                end
+                table.clear(Library.OpenedFrames)
+                Dropdown:OpenDropdown();
+            end
+        end
+
+        DropdownOuter.Active = true
+        pcall(function()
+            for _, child in ipairs(DropdownOuter:GetDescendants()) do
+                if child:IsA('GuiObject') then
+                    child.Active = true
+                end
+            end
+        end)
+
         DropdownOuter.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-                -- always allow opening this dropdown (config list was blocked by MouseIsOverOpenedFrame)
-                if ListOuter.Visible then
-                    Dropdown:CloseDropdown();
-                else
-                    -- close other open frames first
-                    for Frame, _ in next, Library.OpenedFrames do
-                        if Frame ~= ListOuter and typeof(Frame) == 'Instance' then
-                            pcall(function() Frame.Visible = false end)
-                        end
-                    end
-                    table.clear(Library.OpenedFrames)
-                    Dropdown:OpenDropdown();
-                end;
-            end;
+                toggleDropdownList()
+            end
         end);
+        pcall(function()
+            if ItemList then
+                ItemList.Active = true
+                ItemList.InputBegan:Connect(function(Input)
+                    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                        toggleDropdownList()
+                    end
+                end)
+            end
+            if DropdownArrow then
+                DropdownArrow.Active = true
+                DropdownArrow.InputBegan:Connect(function(Input)
+                    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                        toggleDropdownList()
+                    end
+                end)
+            end
+        end)
         InputService.InputBegan:Connect(function(Input)
             if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) then
                 local AbsPos, AbsSize = ListOuter.AbsolutePosition, ListOuter.AbsoluteSize;
@@ -3499,10 +3491,7 @@ function Library:CreateWindow(...)
             CanvasSize = UDim2.new(0, 0, 0, 0);
             BottomImage = '';
             TopImage = '';
-            ScrollBarThickness = 4;
-            ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255);
-            Active = true;
-            ScrollingEnabled = true;
+            ScrollBarThickness = 0;
             ZIndex = 2;
             Parent = TabFrame;
         });
@@ -3514,10 +3503,7 @@ function Library:CreateWindow(...)
             CanvasSize = UDim2.new(0, 0, 0, 0);
             BottomImage = '';
             TopImage = '';
-            ScrollBarThickness = 4;
-            ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255);
-            Active = true;
-            ScrollingEnabled = true;
+            ScrollBarThickness = 0;
             ZIndex = 2;
             Parent = TabFrame;
         });
@@ -3536,13 +3522,9 @@ function Library:CreateWindow(...)
             Parent = RightSide;
         });
         for _, Side in next, { LeftSide, RightSide } do
-            local layout = Side:WaitForChild('UIListLayout');
-            local function updateCanvas()
-                local y = layout.AbsoluteContentSize.Y + 16;
-                Side.CanvasSize = UDim2.fromOffset(0, y);
-            end
-            layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateCanvas);
-            task.defer(updateCanvas);
+            Side:WaitForChild('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+                Side.CanvasSize = UDim2.fromOffset(0, Side.UIListLayout.AbsoluteContentSize.Y);
+            end);
         end;
 
         function Tab:ShowTab()
@@ -3855,62 +3837,58 @@ function Library:CreateWindow(...)
         Library.Toggled = not Library.Toggled;
         ModalElement.Modal = Library.Toggled;
         Outer.Visible = Library.Toggled;
-
-        if Library.Toggled and Library.ShowCustomCursor ~= false then
+        if Library.Toggled then
             task.spawn(function()
                 local State = true
                 pcall(function() State = InputService.MouseIconEnabled end)
 
                 local Cursor, CursorOutline
-                local okDraw = pcall(function()
-                    Cursor = Drawing.new('Triangle')
-                    Cursor.Thickness = 1
-                    Cursor.Filled = true
-                    Cursor.Visible = true
+                local ok = pcall(function()
+                    Cursor = Drawing.new('Triangle');
+                    Cursor.Thickness = 1;
+                    Cursor.Filled = true;
+                    Cursor.Visible = true;
 
-                    CursorOutline = Drawing.new('Triangle')
-                    CursorOutline.Thickness = 1
-                    CursorOutline.Filled = false
-                    CursorOutline.Color = Color3.new(0, 0, 0)
-                    CursorOutline.Visible = true
+                    CursorOutline = Drawing.new('Triangle');
+                    CursorOutline.Thickness = 1;
+                    CursorOutline.Filled = false;
+                    CursorOutline.Color = Color3.new(0, 0, 0);
+                    CursorOutline.Visible = true;
                 end)
 
-                if not okDraw or not Cursor then
-                    -- Drawing missing: keep default mouse icon
+                if not ok or not Cursor then
                     return
                 end
 
                 while Library.Toggled and ScreenGui.Parent do
                     pcall(function()
-                        InputService.MouseIconEnabled = false
-                        local mPos = InputService:GetMouseLocation()
-                        Cursor.Color = Color3.fromRGB(255, 255, 255)
-                        Cursor.PointA = Vector2.new(mPos.X, mPos.Y)
-                        Cursor.PointB = Vector2.new(mPos.X + 16, mPos.Y + 6)
-                        Cursor.PointC = Vector2.new(mPos.X + 6, mPos.Y + 16)
-                        CursorOutline.PointA = Cursor.PointA
-                        CursorOutline.PointB = Cursor.PointB
-                        CursorOutline.PointC = Cursor.PointC
+                        InputService.MouseIconEnabled = false;
+                        local mPos = InputService:GetMouseLocation();
+                        Cursor.Color = Color3.fromRGB(255, 255, 255);
+                        Cursor.PointA = Vector2.new(mPos.X, mPos.Y);
+                        Cursor.PointB = Vector2.new(mPos.X + 16, mPos.Y + 6);
+                        Cursor.PointC = Vector2.new(mPos.X + 6, mPos.Y + 16);
+                        CursorOutline.PointA = Cursor.PointA;
+                        CursorOutline.PointB = Cursor.PointB;
+                        CursorOutline.PointC = Cursor.PointC;
                     end)
-                    RenderStepped:Wait()
-                end
+                    RenderStepped:Wait();
+                end;
 
                 pcall(function() InputService.MouseIconEnabled = State end)
                 pcall(function() if Cursor then Cursor:Remove() end end)
                 pcall(function() if CursorOutline then CursorOutline:Remove() end end)
-            end)
-        end
-
-        -- background blur while UI is open
+            end);
+        end;
         pcall(function()
-            if not Library.BlurEffect or not Library.BlurEffect.Parent then
-                Library.BlurEffect = Instance.new('BlurEffect')
-                Library.BlurEffect.Name = 'LinoriaBlur'
-                Library.BlurEffect.Parent = game:GetService('Lighting')
-            end
-            if Library.Toggled and Library.UseBlur ~= false then
-                Library.BlurEffect.Enabled = true
-                Library.BlurEffect.Size = Library.BlurSize or 48
+            if Library.UseBlur ~= false then
+                if Library.Toggled then
+                    Library.BlurEffect.Enabled = true
+                    Library.BlurEffect.Size = Library.BlurSize or 48
+                else
+                    Library.BlurEffect.Size = 0
+                    Library.BlurEffect.Enabled = false
+                end
             else
                 Library.BlurEffect.Size = 0
                 Library.BlurEffect.Enabled = false
@@ -3958,15 +3936,7 @@ if InputService.TouchEnabled then
     pcall(function()
         if gethui then MobileGui.Parent = gethui() else MobileGui.Parent = CoreGui end
     end)
-    if not MobileGui.Parent then
-        pcall(function() MobileGui.Parent = CoreGui end)
-    end
-    if not MobileGui.Parent then
-        pcall(function()
-            local pg = LocalPlayer:FindFirstChildOfClass('PlayerGui')
-            if pg then MobileGui.Parent = pg end
-        end)
-    end
+    if not MobileGui.Parent then pcall(function() MobileGui.Parent = CoreGui end) end
 
     local BTN_W, BTN_H = 88, 30
     local BTN_GAP      = 40  
@@ -4106,39 +4076,11 @@ if InputService.TouchEnabled then
     end
 end
 
--- Force white accent (Rivals-safe defaults)
 Library.AccentColor = Color3.fromRGB(255, 255, 255)
 Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
-Library.ShowCustomCursor = true
 Library.UseBlur = true
 Library.BlurSize = 48
 pcall(function() Library:UpdateColorsUsingRegistry() end)
-
-
--- lock accent to white even if ThemeManager tries to change it
-do
-    local raw = Library.AccentColor
-    local proxy
-    local mt = {
-        __index = function(_, k)
-            if k == 'AccentColor' then
-                return Color3.fromRGB(255, 255, 255)
-            end
-            return rawget(Library, k)
-        end
-    }
-    -- simpler continuous enforcer
-    task.spawn(function()
-        while ScreenGui and ScreenGui.Parent do
-            if Library.AccentColor ~= Color3.fromRGB(255, 255, 255) then
-                Library.AccentColor = Color3.fromRGB(255, 255, 255)
-                Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
-                pcall(function() Library:UpdateColorsUsingRegistry() end)
-            end
-            task.wait(0.5)
-        end
-    end)
-end
 
 getgenv().Library = Library
 return Library
