@@ -3465,7 +3465,10 @@ function Library:CreateWindow(...)
             CanvasSize = UDim2.new(0, 0, 0, 0);
             BottomImage = '';
             TopImage = '';
-            ScrollBarThickness = 0;
+            ScrollBarThickness = 4;
+            ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255);
+            Active = true;
+            ScrollingEnabled = true;
             ZIndex = 2;
             Parent = TabFrame;
         });
@@ -3477,7 +3480,10 @@ function Library:CreateWindow(...)
             CanvasSize = UDim2.new(0, 0, 0, 0);
             BottomImage = '';
             TopImage = '';
-            ScrollBarThickness = 0;
+            ScrollBarThickness = 4;
+            ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255);
+            Active = true;
+            ScrollingEnabled = true;
             ZIndex = 2;
             Parent = TabFrame;
         });
@@ -3496,9 +3502,13 @@ function Library:CreateWindow(...)
             Parent = RightSide;
         });
         for _, Side in next, { LeftSide, RightSide } do
-            Side:WaitForChild('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-                Side.CanvasSize = UDim2.fromOffset(0, Side.UIListLayout.AbsoluteContentSize.Y);
-            end);
+            local layout = Side:WaitForChild('UIListLayout');
+            local function updateCanvas()
+                local y = layout.AbsoluteContentSize.Y + 16;
+                Side.CanvasSize = UDim2.fromOffset(0, y);
+            end
+            layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateCanvas);
+            task.defer(updateCanvas);
         end;
 
         function Tab:ShowTab()
@@ -3866,7 +3876,7 @@ function Library:CreateWindow(...)
             end
             if Library.Toggled and Library.UseBlur ~= false then
                 Library.BlurEffect.Enabled = true
-                Library.BlurEffect.Size = Library.BlurSize or 15
+                Library.BlurEffect.Size = Library.BlurSize or 50
             else
                 Library.BlurEffect.Size = 0
                 Library.BlurEffect.Enabled = false
