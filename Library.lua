@@ -73,7 +73,7 @@ local Library = {
     Toggled = false;
     ShowCustomCursor = true;
     WireframeDrag = true;
-    UseBlur = false;
+    UseBlur = true;
     BlurSize = 15;
 
     KeybindMode = 'All';
@@ -3284,7 +3284,7 @@ function Library:CreateWindow(...)
     local Inner = Library:Create('Frame', {
         Name = "Inner",
         BackgroundColor3 = Library.MainColor;
-        BorderColor3 = Library.OutlineColor;
+        BorderColor3 = Color3.fromRGB(255, 255, 255);
         BorderMode = Enum.BorderMode.Inset;
         Position = UDim2.new(0, 1, 0, 1);
         Size = UDim2.new(1, -2, 1, -2);
@@ -3293,7 +3293,9 @@ function Library:CreateWindow(...)
     });
     Library:AddToRegistry(Inner, {
         BackgroundColor3 = 'MainColor';
-        BorderColor3 = 'OutlineColor';
+        BorderColor3 = function()
+            return Color3.fromRGB(255, 255, 255)
+        end;
     });
     local WindowLabel = Library:CreateLabel({
         Position = UDim2.new(0, 0, 0, 0);
@@ -3855,15 +3857,16 @@ function Library:CreateWindow(...)
             end)
         end
 
+        -- background blur while UI is open
         pcall(function()
-            if Library.UseBlur then
-                if Library.Toggled then
-                    Library.BlurEffect.Enabled = true
-                    Library.BlurEffect.Size = Library.BlurSize
-                else
-                    Library.BlurEffect.Size = 0
-                    Library.BlurEffect.Enabled = false
-                end
+            if not Library.BlurEffect or not Library.BlurEffect.Parent then
+                Library.BlurEffect = Instance.new('BlurEffect')
+                Library.BlurEffect.Name = 'LinoriaBlur'
+                Library.BlurEffect.Parent = game:GetService('Lighting')
+            end
+            if Library.Toggled and Library.UseBlur ~= false then
+                Library.BlurEffect.Enabled = true
+                Library.BlurEffect.Size = Library.BlurSize or 15
             else
                 Library.BlurEffect.Size = 0
                 Library.BlurEffect.Enabled = false
@@ -4063,6 +4066,8 @@ end
 Library.AccentColor = Color3.fromRGB(255, 255, 255)
 Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
 Library.ShowCustomCursor = true
+Library.UseBlur = true
+Library.BlurSize = 15
 pcall(function() Library:UpdateColorsUsingRegistry() end)
 
 
