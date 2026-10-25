@@ -2513,14 +2513,17 @@ do
 
         local MAX_DROPDOWN_ITEMS = 8;
         local ListOuter = Library:Create('Frame', {
-            BackgroundColor3 = Color3.new(0, 0, 0);
-            BorderColor3 = Color3.new(0, 0, 0);
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20);
+            BorderColor3 = Color3.fromRGB(255, 255, 255);
+            BorderSizePixel = 1;
             ZIndex = 200;
             Visible = false;
             Parent = ScreenGui;
         });
         local function RecalculateListPosition()
-            ListOuter.Position = UDim2.fromOffset(DropdownOuter.AbsolutePosition.X, DropdownOuter.AbsolutePosition.Y + DropdownOuter.Size.Y.Offset + 1);
+            local pos = DropdownOuter.AbsolutePosition
+            local size = DropdownOuter.AbsoluteSize
+            ListOuter.Position = UDim2.fromOffset(pos.X, pos.Y + size.Y + 1);
         end;
 
         local function RecalculateListSize(YSize)
@@ -2617,104 +2620,82 @@ do
                 local Table = {};
                 Count = Count + 1;
 
-                local Button = Library:Create('Frame', {
-                    BackgroundColor3 = Library.MainColor;
-                    BorderColor3 = Library.OutlineColor;
-                    BorderMode = Enum.BorderMode.Middle;
-                    Size = UDim2.new(1, -1, 0, 20);
-                    ZIndex = 203;
-                    Active = true,
-                    Parent = Scrolling;
-                });
-                Library:AddToRegistry(Button, {
-                    BackgroundColor3 = 'MainColor';
-                    BorderColor3 = 'OutlineColor';
-                });
-                local ButtonLabel = Library:CreateLabel({
-                    Active = true;
-                    Size = UDim2.new(1, -6, 1, 0);
-                    Position = UDim2.new(0, 6, 0, 0);
-                    TextSize = Library.FontSize;
-                    Text = tostring(Value);
-                    TextColor3 = Library.FontColor;
-                    TextXAlignment = Enum.TextXAlignment.Left;
-                    ZIndex = 205;
-                    Parent = Button;
-                });
-                -- force visible white text (config list was black under Global ZIndex)
-                ButtonLabel.TextColor3 = Color3.fromRGB(255, 255, 255);
-                ButtonLabel.TextTransparency = 0;
+                
+                -- use TextButton so text is always visible (CreateLabel stroke was invisible)
+                local Button = Instance.new('TextButton')
+                Button.AutoButtonColor = false
+                Button.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+                Button.BorderColor3 = Color3.fromRGB(80, 80, 80)
+                Button.BorderSizePixel = 1
+                Button.Size = UDim2.new(1, -1, 0, 20)
+                Button.ZIndex = 203
+                Button.Font = Library.Font
+                Button.TextSize = Library.FontSize
+                Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+                Button.TextXAlignment = Enum.TextXAlignment.Left
+                Button.Text = '  ' .. tostring(Value)
+                Button.TextTransparency = 0
+                Button.Active = true
+                Button.Parent = Scrolling
 
-                Library:OnHighlight(Button, Button,
-                    { BorderColor3 = 'AccentColor', ZIndex = 204 },
-                    { BorderColor3 = 'OutlineColor', ZIndex = 203 }
-                );
-                local Selected;
+                local ButtonLabel = Button -- alias for old code paths
+                local Selected
 
                 if Info.Multi then
-                    Selected = Dropdown.Value[Value];
+                    Selected = Dropdown.Value[Value]
                 else
-                    Selected = Dropdown.Value == Value;
-                end;
+                    Selected = Dropdown.Value == Value
+                end
 
                 function Table:UpdateButton()
                     if Info.Multi then
-                        Selected = Dropdown.Value[Value];
+                        Selected = Dropdown.Value[Value]
                     else
-                        Selected = Dropdown.Value == Value;
-                    end;
-
-                    -- always readable on dark list bg
+                        Selected = Dropdown.Value == Value
+                    end
                     if Selected then
-                        ButtonLabel.TextColor3 = Color3.fromRGB(255, 255, 255);
-                        Button.BackgroundColor3 = Color3.fromRGB(45, 45, 50);
+                        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        Button.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
                     else
-                        ButtonLabel.TextColor3 = Color3.fromRGB(230, 230, 230);
-                        Button.BackgroundColor3 = Library.MainColor;
+                        Button.TextColor3 = Color3.fromRGB(240, 240, 240)
+                        Button.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
                     end
-                    ButtonLabel.TextTransparency = 0;
-                    if Library.RegistryMap[ButtonLabel] then
-                        Library.RegistryMap[ButtonLabel].Properties.TextColor3 = 'FontColor';
-                    end
-                end;
-                ButtonLabel.InputBegan:Connect(function(Input)
-                    if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) then
-                        local Try = not Selected;
+                    Button.TextTransparency = 0
+                end
 
-                        if Dropdown:GetActiveValues() == 1 and (not Try) and (not Info.AllowNull) then
+                local function onPick()
+                    local Try = not Selected
+                    if Dropdown:GetActiveValues() == 1 and (not Try) and (not Info.AllowNull) then
+                        return
+                    end
+                    if Info.Multi then
+                        Selected = Try
+                        if Selected then
+                            Dropdown.Value[Value] = true
                         else
-                            if Info.Multi then
-                                Selected = Try;
-
-                                if Selected then
-                                    Dropdown.Value[Value] = true;
-                                else
-                                    Dropdown.Value[Value] = nil;
-                                end;
-                            else
-                                Selected = Try;
-
-                                if Selected then
-                                    Dropdown.Value = Value;
-                                else
-                                    Dropdown.Value = nil;
-                                end;
-
-                                for _, OtherButton in next, Buttons do
-                                    OtherButton:UpdateButton();
-                                end;
-                            end;
-
-                            Table:UpdateButton();
-                            Dropdown:Display();
-
-                            Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
-                            Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
-
-                            Library:AttemptSave();
-                        end;
-                    end;
-                end);
+                            Dropdown.Value[Value] = nil
+                        end
+                    else
+                        Selected = Try
+                        if Selected then
+                            Dropdown.Value = Value
+                        else
+                            Dropdown.Value = nil
+                        end
+                        for _, OtherButton in next, Buttons do
+                            OtherButton:UpdateButton()
+                        end
+                    end
+                    Table:UpdateButton()
+                    Dropdown:Display()
+                    Library:SafeCallback(Dropdown.Callback, Dropdown.Value)
+                    Library:SafeCallback(Dropdown.Changed, Dropdown.Value)
+                    Library:AttemptSave()
+                    if not Info.Multi then
+                        Dropdown:CloseDropdown()
+                    end
+                end
+                Button.MouseButton1Click:Connect(onPick)
 
                 Table:UpdateButton();
                 Dropdown:Display();
@@ -2736,9 +2717,15 @@ do
         end;
 
         function Dropdown:OpenDropdown()
+            RecalculateListPosition();
+            Dropdown:BuildDropdownList();
             ListOuter.Visible = true;
             Library.OpenedFrames[ListOuter] = true;
             DropdownArrow.Rotation = 180;
+            -- ensure list text redraws on top
+            ListOuter.ZIndex = 200
+            ListInner.ZIndex = 201
+            Scrolling.ZIndex = 202
         end;
 
         function Dropdown:CloseDropdown()
@@ -2776,7 +2763,6 @@ do
             Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
         end;
 
-        -- open/close on full dropdown area (not just the edge)
         local function toggleDropdownList()
             if ListOuter.Visible then
                 Dropdown:CloseDropdown();
@@ -2787,40 +2773,27 @@ do
                     end
                 end
                 table.clear(Library.OpenedFrames)
+                RecalculateListPosition()
+                RecalculateListSize()
                 Dropdown:OpenDropdown();
             end
         end
 
-        DropdownOuter.Active = true
-        pcall(function()
-            for _, child in ipairs(DropdownOuter:GetDescendants()) do
-                if child:IsA('GuiObject') then
-                    child.Active = true
-                end
-            end
-        end)
-
-        DropdownOuter.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+        -- FULL HITBOX: transparent button covers entire dropdown (fixes edge-only clicks)
+        local HitBtn = Instance.new('TextButton')
+        HitBtn.Name = 'DropdownHit'
+        HitBtn.BackgroundTransparency = 1
+        HitBtn.Text = ''
+        HitBtn.Size = UDim2.new(1, 0, 1, 0)
+        HitBtn.Position = UDim2.new(0, 0, 0, 0)
+        HitBtn.ZIndex = 50
+        HitBtn.AutoButtonColor = false
+        HitBtn.Active = true
+        HitBtn.Parent = DropdownOuter
+        HitBtn.MouseButton1Click:Connect(toggleDropdownList)
+        HitBtn.InputBegan:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.Touch then
                 toggleDropdownList()
-            end
-        end);
-        pcall(function()
-            if ItemList then
-                ItemList.Active = true
-                ItemList.InputBegan:Connect(function(Input)
-                    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-                        toggleDropdownList()
-                    end
-                end)
-            end
-            if DropdownArrow then
-                DropdownArrow.Active = true
-                DropdownArrow.InputBegan:Connect(function(Input)
-                    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-                        toggleDropdownList()
-                    end
-                end)
             end
         end)
         InputService.InputBegan:Connect(function(Input)
