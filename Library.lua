@@ -74,7 +74,7 @@ local Library = {
     ShowCustomCursor = true;
     WireframeDrag = true;
     UseBlur = true;
-    BlurSize = 15;
+    BlurSize = 48;
 
     KeybindMode = 'All';
 
@@ -503,14 +503,33 @@ function Library:OnHighlight(HighlightInstance, Instance, Properties, Properties
 end;
 
 function Library:MouseIsOverOpenedFrame()
-    for Frame, _ in next, Library.OpenedFrames do
-        local AbsPos, AbsSize = Frame.AbsolutePosition, Frame.AbsoluteSize;
-        if Mouse.X >= AbsPos.X and Mouse.X <= AbsPos.X + AbsSize.X
-            and Mouse.Y >= AbsPos.Y and Mouse.Y <= AbsPos.Y + AbsSize.Y then
+    local mx, my
+    pcall(function()
+        local p = InputService:GetMouseLocation()
+        mx, my = p.X, p.Y
+    end)
+    if not mx then
+        mx, my = Mouse.X, Mouse.Y
+    end
+    -- GUI inset compensation
+    local inset = 0
+    pcall(function()
+        local top = game:GetService('GuiService'):GetGuiInset()
+        inset = top.Y
+    end)
+    my = my - inset
 
+    for Frame, _ in next, Library.OpenedFrames do
+        if typeof(Frame) ~= 'Instance' or not Frame.Parent then
+            continue
+        end
+        local AbsPos, AbsSize = Frame.AbsolutePosition, Frame.AbsoluteSize;
+        if mx >= AbsPos.X and mx <= AbsPos.X + AbsSize.X
+            and my >= AbsPos.Y and my <= AbsPos.Y + AbsSize.Y then
             return true;
         end;
     end;
+    return false;
 end;
 
 function Library:IsMouseOverFrame(Frame)
@@ -2527,12 +2546,19 @@ do
         local ListOuter = Library:Create('Frame', {
             BackgroundColor3 = Color3.new(0, 0, 0);
             BorderColor3 = Color3.new(0, 0, 0);
-            ZIndex = 20;
+            ZIndex = 200;
             Visible = false;
             Parent = ScreenGui;
         });
-        local function RecalculateListPosition()
-            ListOuter.Position = UDim2.fromOffset(DropdownOuter.AbsolutePosition.X, DropdownOuter.AbsolutePosition.Y + DropdownOuter.Size.Y.Offset + 1);
+                local function RecalculateListPosition()
+            local insetY = 0
+            pcall(function()
+                insetY = game:GetService('GuiService'):GetGuiInset().Y
+            end)
+            local pos = DropdownOuter.AbsolutePosition
+            local size = DropdownOuter.AbsoluteSize
+            ListOuter.Position = UDim2.fromOffset(pos.X, pos.Y + size.Y);
+        end;
         end;
 
         local function RecalculateListSize(YSize)
@@ -2773,10 +2799,18 @@ do
         end;
 
         DropdownOuter.InputBegan:Connect(function(Input)
-            if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) and not Library:MouseIsOverOpenedFrame() then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                -- always allow opening this dropdown (config list was blocked by MouseIsOverOpenedFrame)
                 if ListOuter.Visible then
                     Dropdown:CloseDropdown();
                 else
+                    -- close other open frames first
+                    for Frame, _ in next, Library.OpenedFrames do
+                        if Frame ~= ListOuter and typeof(Frame) == 'Instance' then
+                            pcall(function() Frame.Visible = false end)
+                        end
+                    end
+                    table.clear(Library.OpenedFrames)
                     Dropdown:OpenDropdown();
                 end;
             end;
@@ -3876,7 +3910,7 @@ function Library:CreateWindow(...)
             end
             if Library.Toggled and Library.UseBlur ~= false then
                 Library.BlurEffect.Enabled = true
-                Library.BlurEffect.Size = Library.BlurSize or 50
+                Library.BlurEffect.Size = Library.BlurSize or 48
             else
                 Library.BlurEffect.Size = 0
                 Library.BlurEffect.Enabled = false
@@ -4077,7 +4111,7 @@ Library.AccentColor = Color3.fromRGB(255, 255, 255)
 Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
 Library.ShowCustomCursor = true
 Library.UseBlur = true
-Library.BlurSize = 15
+Library.BlurSize = 48
 pcall(function() Library:UpdateColorsUsingRegistry() end)
 
 
