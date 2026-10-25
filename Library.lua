@@ -55,7 +55,7 @@ local Library = {
     FontColor = Color3.fromRGB(255, 255, 255);
     MainColor = Color3.fromRGB(28, 28, 28);
     BackgroundColor = Color3.fromRGB(20, 20, 20);
-    AccentColor = Color3.fromRGB(255, 255, 255);
+    AccentColor = Color3.fromRGB(255, 255, 255); -- forced white
     OutlineColor = Color3.fromRGB(50, 50, 50);
     RiskColor = Color3.fromRGB(255, 50, 50),
 
@@ -581,6 +581,9 @@ function Library:RemoveFromRegistry(Instance)
 end;
 
 function Library:UpdateColorsUsingRegistry()
+    -- keep accent forced white
+    Library.AccentColor = Color3.fromRGB(255, 255, 255);
+    Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor);
     for Idx, Object in next, Library.Registry do
         for Property, ColorIdx in next, Object.Properties do
             if type(ColorIdx) == 'string' then
@@ -3807,91 +3810,48 @@ function Library:CreateWindow(...)
         ModalElement.Modal = Library.Toggled;
         Outer.Visible = Library.Toggled;
 
-        -- Custom cursor via GUI (no Drawing API — Rivals / Delta safe)
         if Library.Toggled and Library.ShowCustomCursor ~= false then
             task.spawn(function()
-                local State = InputService.MouseIconEnabled
+                local State = true
+                pcall(function() State = InputService.MouseIconEnabled end)
 
-                local CursorGui = Instance.new('ScreenGui')
-                CursorGui.Name = 'LinoriaCursor'
-                CursorGui.IgnoreGuiInset = true
-                CursorGui.ResetOnSpawn = false
-                CursorGui.DisplayOrder = 999999
-                CursorGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-                pcall(function()
-                    if gethui then CursorGui.Parent = gethui() else CursorGui.Parent = CoreGui end
+                local Cursor, CursorOutline
+                local okDraw = pcall(function()
+                    Cursor = Drawing.new('Triangle')
+                    Cursor.Thickness = 1
+                    Cursor.Filled = true
+                    Cursor.Visible = true
+
+                    CursorOutline = Drawing.new('Triangle')
+                    CursorOutline.Thickness = 1
+                    CursorOutline.Filled = false
+                    CursorOutline.Color = Color3.new(0, 0, 0)
+                    CursorOutline.Visible = true
                 end)
-                if not CursorGui.Parent then
-                    pcall(function() CursorGui.Parent = CoreGui end)
+
+                if not okDraw or not Cursor then
+                    -- Drawing missing: keep default mouse icon
+                    return
                 end
 
-                -- triangle made from rotated frames (looks like Linoria Drawing cursor)
-                local function makeEdge(parent, z)
-                    local f = Instance.new('Frame')
-                    f.BorderSizePixel = 0
-                    f.AnchorPoint = Vector2.new(0, 0.5)
-                    f.Size = UDim2.fromOffset(16, 2)
-                    f.BackgroundColor3 = Library.AccentColor
-                    f.ZIndex = z
-                    f.Parent = parent
-                    return f
-                end
-
-                local root = Instance.new('Frame')
-                root.BackgroundTransparency = 1
-                root.Size = UDim2.fromOffset(20, 20)
-                root.ZIndex = 10
-                root.Parent = CursorGui
-
-                local outline1 = Instance.new('Frame')
-                outline1.BorderSizePixel = 0
-                outline1.AnchorPoint = Vector2.new(0, 0.5)
-                outline1.Size = UDim2.fromOffset(18, 3)
-                outline1.BackgroundColor3 = Color3.new(0, 0, 0)
-                outline1.Rotation = 20
-                outline1.ZIndex = 10
-                outline1.Parent = root
-
-                local outline2 = Instance.new('Frame')
-                outline2.BorderSizePixel = 0
-                outline2.AnchorPoint = Vector2.new(0, 0.5)
-                outline2.Size = UDim2.fromOffset(14, 3)
-                outline2.BackgroundColor3 = Color3.new(0, 0, 0)
-                outline2.Rotation = 70
-                outline2.Position = UDim2.fromOffset(0, 0)
-                outline2.ZIndex = 10
-                outline2.Parent = root
-
-                local edge1 = makeEdge(root, 11)
-                edge1.Rotation = 20
-                local edge2 = makeEdge(root, 11)
-                edge2.Size = UDim2.fromOffset(12, 2)
-                edge2.Rotation = 70
-
-                local fill = Instance.new('Frame')
-                fill.BorderSizePixel = 0
-                fill.Size = UDim2.fromOffset(6, 6)
-                fill.BackgroundColor3 = Library.AccentColor
-                fill.ZIndex = 12
-                fill.Parent = root
-
-                while Library.Toggled and ScreenGui.Parent and CursorGui.Parent do
+                while Library.Toggled and ScreenGui.Parent do
                     pcall(function()
                         InputService.MouseIconEnabled = false
                         local mPos = InputService:GetMouseLocation()
-                        root.Position = UDim2.fromOffset(mPos.X, mPos.Y)
-                        local col = Library.AccentColor
-                        edge1.BackgroundColor3 = col
-                        edge2.BackgroundColor3 = col
-                        fill.BackgroundColor3 = col
+                        Cursor.Color = Color3.fromRGB(255, 255, 255)
+                        Cursor.PointA = Vector2.new(mPos.X, mPos.Y)
+                        Cursor.PointB = Vector2.new(mPos.X + 16, mPos.Y + 6)
+                        Cursor.PointC = Vector2.new(mPos.X + 6, mPos.Y + 16)
+                        CursorOutline.PointA = Cursor.PointA
+                        CursorOutline.PointB = Cursor.PointB
+                        CursorOutline.PointC = Cursor.PointC
                     end)
                     RenderStepped:Wait()
                 end
 
-                pcall(function()
-                    InputService.MouseIconEnabled = State
-                end)
-                pcall(function() CursorGui:Destroy() end)
+                pcall(function() InputService.MouseIconEnabled = State end)
+                pcall(function() if Cursor then Cursor:Remove() end end)
+                pcall(function() if CursorOutline then CursorOutline:Remove() end end)
             end)
         end
 
@@ -4104,6 +4064,32 @@ Library.AccentColor = Color3.fromRGB(255, 255, 255)
 Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
 Library.ShowCustomCursor = true
 pcall(function() Library:UpdateColorsUsingRegistry() end)
+
+
+-- lock accent to white even if ThemeManager tries to change it
+do
+    local raw = Library.AccentColor
+    local proxy
+    local mt = {
+        __index = function(_, k)
+            if k == 'AccentColor' then
+                return Color3.fromRGB(255, 255, 255)
+            end
+            return rawget(Library, k)
+        end
+    }
+    -- simpler continuous enforcer
+    task.spawn(function()
+        while ScreenGui and ScreenGui.Parent do
+            if Library.AccentColor ~= Color3.fromRGB(255, 255, 255) then
+                Library.AccentColor = Color3.fromRGB(255, 255, 255)
+                Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
+                pcall(function() Library:UpdateColorsUsingRegistry() end)
+            end
+            task.wait(0.5)
+        end
+    end)
+end
 
 getgenv().Library = Library
 return Library
