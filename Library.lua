@@ -324,40 +324,30 @@ function Library:MakeResizable(Instance, MinSize, MaxSize)
         Text = '',
         AutoButtonColor = false,
         BackgroundTransparency = 1,
-        Size = UDim2.fromOffset(22, 22),
-        Position = UDim2.new(1, -2, 1, -2),
+        Size = UDim2.fromOffset(20, 20),
+        Position = UDim2.new(1, -1, 1, -1),
         AnchorPoint = Vector2.new(1, 1),
         ZIndex = 25,
         Parent = Instance,
     })
 
-    -- white corner grip (rounded quarter, bottom-right)
-    local GripVisual = Library:Create('Frame', {
-        Name = 'GripVisual',
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BorderSizePixel = 0,
-        Size = UDim2.fromOffset(16, 16),
+    -- white resize triangle (same style as the corner grip)
+    local GripIcon = Library:Create('TextLabel', {
+        BackgroundTransparency = 1,
+        Size = UDim2.fromOffset(18, 18),
         Position = UDim2.new(1, 0, 1, 0),
         AnchorPoint = Vector2.new(1, 1),
+        Font = Enum.Font.Code,
+        Text = '◢',
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 18,
+        TextTransparency = 0,
+        TextXAlignment = Enum.TextXAlignment.Right,
+        TextYAlignment = Enum.TextYAlignment.Bottom,
         ZIndex = 26,
         Parent = Grip,
     })
-    Library:Create('UICorner', {
-        CornerRadius = UDim.new(0, 5),
-        Parent = GripVisual,
-    })
-    -- hide top-left so only bottom-right corner remains
-    local Cut = Library:Create('Frame', {
-        BackgroundColor3 = Library.MainColor,
-        BorderSizePixel = 0,
-        Size = UDim2.new(0.65, 0, 0.65, 0),
-        Position = UDim2.fromScale(0, 0),
-        ZIndex = 27,
-        Parent = GripVisual,
-    })
-    Library:AddToRegistry(Cut, {
-        BackgroundColor3 = 'MainColor',
-    })
+
 
     Grip.InputBegan:Connect(function(Input)
         if Input.UserInputType ~= Enum.UserInputType.MouseButton1
@@ -4081,7 +4071,7 @@ end
 Library.AccentColor = Color3.fromRGB(255, 255, 255)
 Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
 Library.UseBlur = true
-Library.BlurSize = 48
+Library.BlurSize = 70
 pcall(function() Library:UpdateColorsUsingRegistry() end)
 
 getgenv().Library = Library
