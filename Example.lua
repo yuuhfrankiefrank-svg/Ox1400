@@ -1,6 +1,3 @@
--- Example menu using LinoriaRivalsSafe (Rivals-safe, mobile + PC)
--- Upload LinoriaRivalsSafe.lua to this repo path first.
-
 local repo = "https://raw.githubusercontent.com/yuuhfrankiefrank-svg/Ox1400/main/"
 local Library = loadstring(game:HttpGet(repo .. "LinoriaRivalsSafe.lua"))()
 
